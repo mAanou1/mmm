@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARISE ⚔️ - Shadow Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #05070a;
+            --card: rgba(20, 25, 45, 0.7);
+            --primary: #00d4ff;
+            --secondary: #7c7cff;
+            --text: #e0e0e0;
+            --gold: #f5c542;
+            --danger: #ff4d4d;
+            --rest: #bb86fc;
+            --streak: #ff9600;
+            --reward: #4ade80;
+            --neon-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+        * { box-sizing: border-box; font-family: 'Rajdhani', 'Segoe UI', sans-serif; }
+        body { 
+            margin: 0; 
+            background: radial-gradient(circle at top, #1a1f35 0%, #05070a 100%);
+            color: var(--text); 
+            padding: 15px;
+            min-height: 100vh;
+        }
+        header { 
+            text-align: center; 
+            padding: 30px; 
+            letter-spacing: 5px;
+            text-transform: uppercase;
+        }
+        header h1 { margin: 0; font-size: 2.5rem; text-shadow: var(--neon-shadow); color: white; }
+        
+        .lang-btn { position: absolute; top: 15px; right: 15px; background: transparent; border: 1px solid var(--primary); color: var(--primary); padding: 5px 15px; border-radius: 4px; cursor: pointer; transition: 0.3s; }
+        .lang-btn:hover { background: var(--primary); color: black; }
+
+        main { max-width: 1400px; margin: auto; display: grid; grid-template-columns: 1fr; gap: 25px; }
+        @media (min-width: 1000px) { main { grid-template-columns: 350px 1fr 380px; } }
+        
+        .card { 
+            background: var(--card); 
+            border-radius: 12px; 
+            padding: 25px; 
+            border: 1px solid rgba(0, 212, 255, 0.15); 
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h3 { 
+            margin-top: 0; 
+            border-left: 4px solid var(--primary); 
+            padding-left: 10px; 
+            font-size: 1.1rem; 
+            color: white;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+        
+        /* Stats & Bars */
+        .streak-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; }
+        .streak-val { font-size: 2.5rem; font-weight: 900; color: var(--streak); text-shadow: 0 0 10px rgba(255,150,0,0.4); }
+        
+        .bar-container { background: rgba(255,255,255,0.05); height: 8px; border-radius: 4px; overflow: hidden; margin: 8px 0; position: relative; }
+        .bar-fill { height: 100%; transition: 1s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+        .xp-fill { background: linear-gradient(90deg, var(--primary), #7c7cff); box-shadow: 0 0 10px var(--primary); }
+        .rank-fill { background: linear-gradient(90deg, #ff00ff, #7c7cff); }
+
+        /* Items & Quests */
+        .item-row, .quest-li { 
+            background: rgba(255, 255, 255, 0.03); 
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px; 
+            padding: 12px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 10px;
+            transition: 0.3s;
+        }
+        .quest-li:hover { background: rgba(255,255,255,0.07); border-color: var(--primary); }
+        
+        input, select, .btn-action { 
+            width: 100%; padding: 12px; border-radius: 6px; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            background: rgba(0,0,0,0.3); color: white; margin-bottom: 10px;
+        }
+        .btn-action { 
+            background: var(--primary); border: none; font-weight: bold; cursor: pointer; color: black;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-action:hover { filter: brightness(1.2); }
+
+        /* Badges */
+        .badges-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .badge-slot { 
+            background: rgba(0,0,0,0.4); padding: 15px 5px; border-radius: 8px; 
+            text-align: center; opacity: 0.2; filter: grayscale(1); 
+            border: 1px solid rgba(255,255,255,0.05); transition: 0.5s;
+            position: relative;
+        }
+        .badge-slot.unlocked { 
+            opacity: 1; filter: grayscale(0); border-color: var(--primary); 
+            background: rgba(0, 212, 255, 0.05); box-shadow: inset 0 0 10px rgba(0,212,255,0.2);
+        }
+        .badge-desc { font-size: 0.5rem; color: #888; text-transform: uppercase; display: block; margin-top: 5px; }
+
+        /* Calendar Styling */
+        .calendar-card { text-align: center; margin-bottom: 20px; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 8px; }
+        #calDate { font-size: 1.2rem; color: var(--primary); font-weight: bold; }
+
+        /* Charts */
+        .chart-box { height: 180px; margin-bottom: 5px; }
+        .purge-btn { background: none; border: 1px solid rgba(255,77,77,0.3); color: var(--danger); font-size: 0.6rem; cursor: pointer; padding: 2px 5px; border-radius: 3px; display: block; margin: 0 auto 15px auto; }
+
+        /* Inventory */
+        .inv-item { background: rgba(0, 212, 255, 0.1); border-left: 3px solid var(--primary); padding: 10px; border-radius: 4px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .buy-btn { background: white; color: black; border: none; padding: 5px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.75rem; }
+
+        #historyList { max-height: 120px; overflow-y: auto; font-size: 0.8rem; color: #666; list-style: none; padding: 0; }
+        .hist-item { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<header>
+    <button class="lang-btn" onclick="toggleLang()" id="langBtn">FR</button>
+    <h1>SYSTEM ARISE</h1>
+</header>
+
+<main>
+    <div class="card">
+        <div class="calendar-card">
+            <div id="calDate">-- / -- / ----</div>
+        </div>
+
+        <div class="streak-container">
+            <span style="font-size:1.5rem;">STATUS:</span>
+            <span class="streak-val" id="streakNum">0</span>
+            <span id="txtStreak" style="font-weight: 600; color: var(--streak);">DAYS</span>
+        </div>
+        
+        <div id="rankText" style="text-align:center; font-size:3rem; font-weight:900; color:white; margin-bottom:10px; font-style: italic;">RANK E</div>
+        
+        <div style="display:flex; justify-content: space-between; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;">
+            <span><span id="txtLvl">LVL</span> <b id="levelNum" style="color:var(--primary); font-size:1.2rem;">1</b></span>
+            <span><span id="xpNum">0</span> / <span id="xpNext">200</span> XP</span>
+        </div>
+        <div class="bar-container"><div id="xpBar" class="bar-fill xp-fill"></div></div>
+        
+        <div style="display:flex; justify-content: space-between; font-size: 0.65rem; color:#666; margin-top:15px; text-transform: uppercase;">
+            <span id="txtProg"></span>
+            <span id="nextRankLabel" style="color:var(--secondary); font-weight: bold;"></span>
+        </div>
+        <div class="bar-container" style="height:5px;"><div id="rankBar" class="bar-fill rank-fill"></div></div>
+        
+        <h2 style="text-align:center; color: var(--gold); font-size: 2.2rem; margin:25px 0; letter-spacing: 2px;">
+            <span style="font-size: 1rem; vertical-align: middle; color: #666;">GOLD:</span> <span id="goldNum">0</span>
+        </h2>
+        
+        <div class="chart-box"><canvas id="progressionChart"></canvas></div>
+        <button class="purge-btn" onclick="purgeGraph()">[ PURGE GRAPH ERRORS ]</button>
+        <div class="chart-box" style="height:220px;"><canvas id="radarChart"></canvas></div>
+        
+        <div style="display:flex; gap:8px; margin-top:20px;">
+            <button class="btn-action" style="background:#1a1f35; color:var(--primary); border:1px solid var(--primary); flex: 1;" onclick="exportData()">EXPORT</button>
+            <button class="btn-action" style="background:#1a1f35; color:var(--primary); border:1px solid var(--primary); flex: 1;" onclick="importData()">IMPORT</button>
+            <button class="btn-action" style="background:transparent; color:var(--danger); border:1px solid var(--danger); flex: 1;" onclick="resetAll()">RESET</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 id="txtQuest">DAILY MISSIONS</h3>
+        <input type="text" id="taskInput" placeholder="Saisir la mission...">
+        <div style="display:flex; gap:10px;">
+            <select id="skillSelect" style="flex:2;"></select>
+            <select id="diffInput" style="flex:3;"></select>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <select id="recurrenceInput" style="flex:1;">
+                <option value="once">Unique</option>
+                <option value="daily">Quotidien</option>
+                <option value="weekly">Hebdomadaire</option>
+            </select>
+            <input type="date" id="calendarInput" style="flex:1;">
+        </div>
+        <button class="btn-action" onclick="addTask()" id="btnAdd" style="background:var(--primary);">ADD MISSION</button>
+        
+        <ul id="taskList" style="padding:0; list-style:none; margin-top:20px;"></ul>
+        <button class="btn-action" style="background:transparent; border:1px solid var(--danger); color:var(--danger); font-size:0.7rem;" onclick="clearDone()" id="btnVider">PURGE COMPLETED</button>
+
+        <h3 id="txtComp" style="margin-top:40px;">SKILLS & ABILITIES</h3>
+        <div id="skillTagsContainer" style="margin-bottom:15px; display:flex; flex-wrap:wrap; gap:8px;"></div>
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="newSkillInput" placeholder="Nouvelle compétence...">
+            <button class="btn-action" onclick="addSkill()" style="width:auto; background:var(--secondary); color:white;">+</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 id="txtBadge">ACHIEVEMENTS</h3>
+        <div class="badges-grid" id="badgeGrid">
+            <div class="badge-slot" id="badge-novice"><b>🛡️</b><span class="badge-desc" id="b1"></span></div>
+            <div class="badge-slot" id="badge-hunter"><b>⚔️</b><span class="badge-desc" id="b2"></span></div>
+            <div class="badge-slot" id="badge-actif"><b>🔥</b><span class="badge-desc" id="b3"></span></div>
+            <div class="badge-slot" id="badge-shadow"><b>🌑</b><span class="badge-desc" id="b4"></span></div>
+            <div class="badge-slot" id="badge-serie"><b>⚡</b><span class="badge-desc" id="b5"></span></div>
+            <div class="badge-slot" id="badge-elite"><b>👑</b><span class="badge-desc" id="b6"></span></div>
+            <div class="badge-slot" id="badge-nation" style="grid-column: span 3;"><b>🌍</b><span class="badge-desc" id="b7"></span></div>
+        </div>
+
+        <h3 style="color:var(--rest); margin-top:30px;" id="txtShop">RECOVERY SHOP</h3>
+        <div id="shopRestList"></div>
+
+        <h3 style="color:var(--reward); margin-top:30px;" id="txtRewTitle">CUSTOM REWARDS</h3>
+        <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="newCatInput" placeholder="Catégorie...">
+                <button class="btn-action" onclick="addCategory()" style="width:auto; background:var(--secondary); color:white;">+</button>
+            </div>
+            <input type="text" id="rwNameInput" placeholder="Nom de la récompense...">
+            <div style="display:flex; gap:5px;">
+                <select id="rwCatSelect"></select>
+                <input type="number" id="rwPriceInput" placeholder="Prix">
+            </div>
+            <button class="btn-action" style="background:var(--reward); color:black;" onclick="createReward()" id="btnRwAdd">ADD TO SHOP</button>
+        </div>
+        <div id="customRewardList" style="margin-top:15px;"></div>
+
+        <h3 style="color:var(--primary); margin-top:30px;">INVENTORY</h3>
+        <div id="inventoryList"></div>
+
+        <div style="margin-top:30px; border-top: 1px solid rgba(255,255,255,0.05); padding-top:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span id="txtHist" style="font-size:0.7rem; color:#666;">LOG HISTORY</span>
+                <button onclick="clearHistory()" style="background:none; border:none; color:var(--danger); font-size:0.6rem; cursor:pointer;">[WIPE]</button>
+            </div>
+            <ul id="historyList"></ul>
+        </div>
+    </div>
+</main>
+
+<script>
+    const translations = {
+        fr: {
+            streak: "JOURS", lvl: "NIVEAU", prog: "PROGRESSION RANG", comp: "COMPÉTENCES", quest: "MISSIONS QUOTIDIENNES", 
+            add: "AJOUTER", vider: "EFFACER TERMINÉES", badge: "ACHÈVEMENTS", shop: "BOUTIQUE DE RÉCUPÉRATION", 
+            rewTitle: "RÉCOMPENSES PERSO", buy: "ACHETER", hist: "HISTORIQUE DU SYSTÈME",
+            diff: ["Facile", "Normal", "Difficile"],
+            pauses: ["Pause 10min", "Pause 2h", "Pause 30min", "Libre 1j"],
+            bDescs: ["1 Mission", "200 XP", "7 Missions", "1000 XP", "3 Jours", "Lvl 100", "50000 XP"]
+        },
+        en: {
+            streak: "DAYS", lvl: "LEVEL", prog: "RANK PROGRESS", comp: "ABILITIES", quest: "DAILY MISSIONS", 
+            add: "ADD MISSION", vider: "PURGE DONE", badge: "ACHIEVEMENTS", shop: "RECOVERY SHOP", 
+            rewTitle: "CUSTOM REWARDS", buy: "BUY", hist: "SYSTEM LOGS",
+            diff: ["Easy", "Normal", "Hard"],
+            pauses: ["10min break", "2h break", "30min break", "1d free"],
+            bDescs: ["1 Quest", "200 XP", "7 Quests", "1000 XP", "3 Days", "Lvl 100", "50000 XP"]
+        }
+    };
+
+    const RANKS = [
+        { name: "E", min: 0, max: 200, rewards: [5, 15, 30] },
+        { name: "D", min: 200, max: 500, rewards: [10, 20, 35] },
+        { name: "C", min: 500, max: 1000, rewards: [15, 25, 40] },
+        { name: "B", min: 1000, max: 1500, rewards: [20, 30, 45] },
+        { name: "A", min: 1500, max: 3000, rewards: [25, 35, 50] },
+        { name: "S", min: 3000, max: 1000000, rewards: [30, 40, 60] }
+    ];
+
+    let state = JSON.parse(localStorage.getItem('arise_v_final_stable')) || { 
+        gold: 0, xp: 0, totalXp: 0, level: 1, tasks: [], badges: [], history: [], 
+        xpHistory: [], skills: ["Force", "Intelligence", "Agilité"], 
+        skillData: { "Force": 0, "Intelligence": 0, "Agilité": 0 },
+        categories: ["Loisir"], customRewards: [], streak: 0, lastCheckIn: null,
+        inventory: [], lastDate: null
+    };
+
+    let lang = localStorage.getItem('arise_lang') || 'fr';
+    let myChart = null, myRadar = null;
+
+    function save() {
+        const now = new Date();
+        const ariseDay = new Date(now.getTime() - (6 * 60 * 60 * 1000));
+        const todayStr = ariseDay.toDateString();
+        
+        if (state.lastDate && state.lastDate !== todayStr) {
+            const pendingTasks = state.tasks.filter(t => !t.done).length;
+            if (pendingTasks > 0) {
+                const penalty = pendingTasks * 50;
+                state.xp = Math.max(0, state.xp - penalty);
+                state.totalXp = Math.max(0, state.totalXp - penalty);
+                state.history.unshift({ 
+                    name: `⚠️ SANCTION (6H00): -${penalty} XP`, 
+                    time: now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) 
+                });
+                state.streak = 0;
+            }
+        }
+        state.lastDate = todayStr;
+
+        const label = ariseDay.toLocaleDateString('fr-FR', {day:'2-digit', month:'short'});
+        const dayID = ariseDay.setHours(0,0,0,0);
+
+        if(!state.xpHistory) state.xpHistory = [];
+        state.xpHistory = state.xpHistory.filter(h => h.date !== label);
+        state.xpHistory.push({date: label, xp: state.totalXp, unix: dayID});
+        state.xpHistory.sort((a,b) => a.unix - b.unix);
+        if (state.xpHistory.length > 7) state.xpHistory = state.xpHistory.slice(-7);
+
+        localStorage.setItem('arise_v_final_stable', JSON.stringify(state)); 
+    }
+
+    function purgeGraph() {
+        if(!state.xpHistory) return;
+        const unique = {};
+        state.xpHistory.forEach(h => {
+            if(!unique[h.date] || h.unix > unique[h.date].unix) {
+                unique[h.date] = h;
+            }
+        });
+        state.xpHistory = Object.values(unique).sort((a,b) => a.unix - b.unix).slice(-7);
+        save(); render();
+        alert("Graph Purged & Sorted!");
+    }
+
+    function updateCalendar() {
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('calDate').innerText = now.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', options).toUpperCase();
+    }
+
+    // FONCTION RESET DES QUETES RECURRENTES
+    function checkRecurrenceResets() {
+        const now = new Date();
+        const ariseDay = new Date(now.getTime() - (6 * 60 * 60 * 1000));
+        const todayStr = ariseDay.toDateString();
+        const currentDay = ariseDay.getDay();
+
+        state.tasks.forEach(t => {
+            if (t.done && t.lastDoneDate !== todayStr) {
+                if (t.recurrence === 'daily') {
+                    t.done = false;
+                } else if (t.recurrence === 'weekly' && t.dayOfWeek === currentDay) {
+                    t.done = false;
+                }
+            }
+        });
+    }
+
+    function render() {
+        checkRecurrenceResets();
+        const t = translations[lang];
+        const rIndex = RANKS.findIndex(rk => state.totalXp >= rk.min && state.totalXp < rk.max);
+        const r = RANKS[rIndex] || RANKS[RANKS.length - 1];
+        const nextR = RANKS[rIndex + 1];
+        const reqXp = Math.floor(200 * Math.pow(1.15, state.level - 1));
+
+        updateCalendar();
+        document.getElementById('langBtn').innerText = lang.toUpperCase();
+        document.getElementById('txtStreak').innerText = t.streak;
+        document.getElementById('txtLvl').innerText = t.lvl;
+
+        if (nextR) {
+            const xpLeft = nextR.min - state.totalXp;
+            document.getElementById('txtProg').innerText = `${t.prog} (${lang === 'fr' ? 'RESTE' : 'STILL'} ${xpLeft} XP)`;
+            document.getElementById('nextRankLabel').innerText = "NEXT: RANK " + nextR.name;
+        } else { 
+            document.getElementById('txtProg').innerText = t.prog + " (MAX RANK)";
+            document.getElementById('nextRankLabel').innerText = "";
+        }
+
+        document.getElementById('streakNum').innerText = state.streak;
+        document.getElementById('levelNum').innerText = state.level;
+        document.getElementById('xpNum').innerText = state.xp;
+        document.getElementById('xpNext').innerText = reqXp;
+        document.getElementById('goldNum').innerText = state.gold;
+        document.getElementById('rankText').innerText = "RANK " + r.name;
+        document.getElementById('xpBar').style.width = (state.xp / reqXp * 100) + "%";
+        document.getElementById('rankBar').style.width = ((state.totalXp - r.min) / (r.max - r.min) * 100) + "%";
+
+        document.getElementById('skillTagsContainer').innerHTML = state.skills.map(s => `
+            <span class="inv-item" style="font-size:0.7rem; background:rgba(255,255,255,0.05); margin:0; border:1px solid rgba(255,255,255,0.1);">${s} <b onclick="removeSkill('${s}')" style="color:var(--danger); cursor:pointer; margin-left:8px;">×</b></span>
+        `).join('');
+
+        document.getElementById('skillSelect').innerHTML = state.skills.map(s => `<option value="${s}">${s}</option>`).join('');
+        document.getElementById('diffInput').innerHTML = r.rewards.map((v, i) => `<option value="${v}">${t.diff[i]} (+${v} XP/💰)</option>`).join('');
+        document.getElementById('rwCatSelect').innerHTML = state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+        const pPrices = [40, 150, 80, 200];
+        document.getElementById('shopRestList').innerHTML = t.pauses.map((name, i) => `
+            <div class="item-row">
+                <span><b>${name}</b> <small style="color:var(--gold)">${pPrices[i]}💰</small></span>
+                <button class="buy-btn" onclick="buyItem('${name}', ${pPrices[i]})">${t.buy}</button>
+            </div>`).join('');
+
+        document.getElementById('customRewardList').innerHTML = state.customRewards.map((rw, i) => `
+            <div class="item-row">
+                <span><small style="color:var(--reward)">${rw.cat}</small><br><b>${rw.name}</b> <small style="color:var(--gold)">${rw.price}💰</small></span>
+                <div><button class="buy-btn" onclick="buyItem('${rw.name}', ${rw.price})">${t.buy}</button>
+                <button onclick="removeReward(${i})" style="background:none; border:none; color:var(--danger); cursor:pointer; margin-left:10px;">×</button></div>
+            </div>`).join('');
+
+        document.getElementById('inventoryList').innerHTML = state.inventory.map((name, i) => `
+            <div class="inv-item">
+                <span>📦 ${name}</span>
+                <button class="buy-btn" style="background:var(--primary);" onclick="useItem(${i})">ACTIVATE</button>
+            </div>`).join('');
+
+        checkBadges();
+        document.querySelectorAll('.badge-slot').forEach(el => el.classList.remove('unlocked'));
+        state.badges.forEach(b => document.getElementById('badge-' + b)?.classList.add('unlocked'));
+        
+        for(let i=1; i<=7; i++) { document.getElementById('b'+i).innerText = t.bDescs[i-1]; }
+
+        const todayDateStr = new Date(new Date().getTime() - (6 * 60 * 60 * 1000)).toDateString();
+
+        document.getElementById('taskList').innerHTML = state.tasks.map(q => {
+            // Logique de filtrage par calendrier
+            const isVisible = (q.recurrence === 'daily') || 
+                              (q.recurrence === 'weekly' && q.dayOfWeek === new Date().getDay()) ||
+                              (q.targetDate === todayDateStr) || (!q.targetDate && q.recurrence === 'once');
+
+            if (!isVisible) return '';
+
+            return `
+            <li class="quest-li" style="opacity:${q.done?0.3:1}; border-left: 3px solid ${q.done?'#444':'var(--primary)'}">
+                <div><b>${q.text}</b> <br><small style="color:#666">${q.skill} (${q.recurrence.toUpperCase()})</small></div>
+                <div style="display:flex; gap:10px;">
+                    ${!q.done ? `<button onclick="completeTask(${q.id})" style="background:var(--primary);border:none;border-radius:4px;cursor:pointer;padding:8px; font-weight:bold;">SOLVE</button>` : '<span style="color:var(--reward)">COMPLETED</span>'}
+                    <button onclick="deleteTask(${q.id})" style="background:transparent;border:1px solid var(--danger);border-radius:4px;cursor:pointer;padding:8px;color:var(--danger);">×</button>
+                </div>
+            </li>`;
+        }).join('');
+
+        document.getElementById('historyList').innerHTML = state.history.map(h => `<li class="hist-item"><span>${h.name}</span><small>${h.time}</small></li>`).join('');
+
+        if (myChart && myRadar) {
+            myChart.data.labels = state.xpHistory.map(h => h.date);
+            myChart.data.datasets[0].data = state.xpHistory.map(h => h.xp);
+            myChart.update();
+            myRadar.data.labels = state.skills;
+            myRadar.data.datasets[0].data = state.skills.map(s => state.skillData[s] || 0);
+            myRadar.update();
+        }
+    }
+
+    function buyItem(name, price) { if(state.gold >= price) { state.gold -= price; state.inventory.push(name); state.history.unshift({ name: "Purchased: " + name, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) }); save(); render(); } else alert(lang==='fr'?"Or insuffisant !":"Not enough gold!"); }
+    function useItem(index) { const item = state.inventory[index]; state.history.unshift({ name: "Used: " + item, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) }); state.inventory.splice(index, 1); save(); render(); }
+    function removeSkill(skill) { state.skills = state.skills.filter(s => s !== skill); save(); render(); }
+    function addSkill() { const v = document.getElementById('newSkillInput').value; if(v && !state.skills.includes(v)) { state.skills.push(v); state.skillData[v] = 0; save(); render(); } }
+    function deleteTask(id) { state.tasks = state.tasks.filter(t => t.id !== id); save(); render(); }
+    
+    function completeTask(id) { 
+        const q = state.tasks.find(x => x.id === id); 
+        if(!q || q.done) return; 
+        const now = new Date(); 
+        const ariseDay = new Date(now.getTime() - (6 * 60 * 60 * 1000)).toDateString(); 
+        if (state.lastCheckIn !== ariseDay) { state.streak++; state.lastCheckIn = ariseDay; } 
+        
+        q.done = true; 
+        q.lastDoneDate = ariseDay; // On marque la date de complétion
+
+        state.xp += q.xp; 
+        state.totalXp += q.xp; 
+        state.gold += q.xp; 
+        state.skillData[q.skill] = (state.skillData[q.skill]||0) + q.xp; 
+        
+        // Si c'est une quête unique, on peut la supprimer ou la garder complétée
+        if(q.recurrence === 'once') {
+             // Optionnel: state.tasks = state.tasks.filter(t => t.id !== id);
+        }
+
+        let req = Math.floor(200 * Math.pow(1.15, state.level - 1)); 
+        while(state.xp >= req) { state.xp -= req; state.level++; req = Math.floor(200 * Math.pow(1.15, state.level - 1)); } 
+        save(); render(); 
+    }
+
+    function checkBadges() { const b = state.badges; const doneCount = state.tasks.filter(t => t.done).length; const pushIfMissing = (tag) => { if(!b.includes(tag)) b.push(tag); }; if(doneCount >= 1) pushIfMissing('novice'); if(state.totalXp >= 200) pushIfMissing('hunter'); if(doneCount >= 7) pushIfMissing('actif'); if(state.totalXp >= 1000) pushIfMissing('shadow'); if(state.streak >= 3) pushIfMissing('serie'); if(state.level >= 100) pushIfMissing('elite'); if(state.totalXp >= 50000) pushIfMissing('nation'); }
+    function toggleLang() { lang = (lang === 'fr' ? 'en' : 'fr'); localStorage.setItem('arise_lang', lang); render(); }
+    function addCategory() { const v = document.getElementById('newCatInput').value; if(v) { state.categories.push(v); save(); render(); } }
+    function createReward() { const n = document.getElementById('rwNameInput').value; const p = parseInt(document.getElementById('rwPriceInput').value); const c = document.getElementById('rwCatSelect').value; if(n && p) { state.customRewards.push({name:n, price:p, cat:c}); save(); render(); } }
+    function removeReward(i) { state.customRewards.splice(i, 1); save(); render(); }
+    
+    // NOUVELLE FONCTION ADDTASK AVEC CALENDRIER
+    function addTask() { 
+        const v = document.getElementById('taskInput').value; 
+        const rec = document.getElementById('recurrenceInput').value;
+        const cal = document.getElementById('calendarInput').value;
+        
+        if(v) { 
+            const d = cal ? new Date(cal) : new Date();
+            state.tasks.push({
+                id: Date.now(), 
+                text: v, 
+                skill: document.getElementById('skillSelect').value, 
+                xp: parseInt(document.getElementById('diffInput').value), 
+                recurrence: rec,
+                targetDate: cal ? new Date(cal).toDateString() : null,
+                dayOfWeek: d.getDay(),
+                done: false,
+                lastDoneDate: null
+            }); 
+            save(); render(); 
+            document.getElementById('taskInput').value = "";
+        } 
+    }
+
+    function clearDone() { state.tasks = state.tasks.filter(t => !t.done); save(); render(); }
+    function clearHistory() { state.history = []; save(); render(); }
+    function exportData() { const data = btoa(JSON.stringify(state)); navigator.clipboard.writeText(data); alert("SAVE CODE COPIED!"); }
+    function importData() { const code = prompt("PASTE SAVE CODE:"); if(code) { try { state = JSON.parse(atob(code)); save(); location.reload(); } catch(e) { alert("INVALID CODE!"); } } }
+    function resetAll() { if(confirm("RESET ALL?")) { if(confirm("ARE YOU SURE?")) { localStorage.removeItem('arise_v_final_stable'); location.reload(); } } }
+
+    window.onload = () => {
+        const ctxL = document.getElementById('progressionChart').getContext('2d');
+        myChart = new Chart(ctxL, { 
+            type: 'line', 
+            data: { labels: [], datasets: [{ data: [], borderColor: '#00d4ff', backgroundColor: 'rgba(0, 212, 255, 0.1)', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 2 }] }, 
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } }, 
+                scales: { 
+                    x: { ticks: { color: '#666', font: { size: 9 } }, grid: { display: false } }, 
+                    y: { ticks: { color: '#666', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } } 
+                } 
+            } 
+        });
+        const ctxR = document.getElementById('radarChart').getContext('2d');
+        myRadar = new Chart(ctxR, { type: 'radar', data: { labels: state.skills, datasets: [{ data: [], backgroundColor: 'rgba(0, 212, 255, 0.2)', borderColor: '#00d4ff', borderWidth: 2, pointBackgroundColor: '#00d4ff' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { r: { angleLines: { color: 'rgba(255,255,255,0.1)' }, grid: { color: 'rgba(255,255,255,0.1)' }, pointLabels: { color: '#aaa', font: { size: 10 } }, ticks: { display: false } } } } });
+        
+        save();
+        render();
+    };
+</script>
+</body>
+</html>
